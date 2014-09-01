@@ -1,0 +1,511 @@
+<html>
+
+<head>
+  <style>
+
+    @font-face {
+      font-family: "GeoSans";
+      src: url("lib/GeosansLight.ttf");
+    }
+    html{ color:#fff; background:#000; font-family:"GeoSans"; overflow:hidden }
+
+    #container{
+      width      : 100%;
+      height     : 100%;
+      position   : absolute;
+      top        : 0px;
+      left       : 0px;
+      background : #000;
+    }
+
+    #stats{
+      position  : absolute;
+      bottom    : 0px;
+      right     : 0px;
+      z-index   : 999;
+    }
+
+    a{
+      color: #fff;
+      position: absolute;
+      z-index: 999;
+    }
+
+    #loading{
+
+      width:100%;
+      text-align:center;
+      padding-top:100px;
+      font-size:25px;
+
+    }
+
+  </style>
+</head>
+<body>
+
+
+
+<script src = "lib/underscore.js"           ></script>
+<script src = "lib/three.js"                ></script>
+<script src = "lib/jquery.min.js"           ></script>
+<script src = "lib/stats.min.js"            ></script>
+<script src = "lib/TrackballControls.js"    ></script>
+<script src = "lib/TextCreator.js"          ></script>
+<script src = "lib/ShaderLoader.js"         ></script>
+<script src = "lib/UserAudio.js"            ></script>
+<script src = "lib/Stream.js"               ></script>
+<script src = "lib/AudioController.js"      ></script>
+<script src = "lib/AudioTexture.js"         ></script>
+<script src = "lib/ObjectControls.js"       ></script>
+<script src = "lib/PhysicsRenderer.js"      ></script>
+<script src = "lib/ParticleUtils.js"      ></script>
+<script src = "lib/leap.js"                 ></script>
+<script src = "lib/Tree.js"                 ></script>
+<script src = "Particles.js"      ></script>
+<script src = "Mountains.js"                ></script>
+
+<script src="fonts/gentilis_bold.typeface.js"></script>
+<script src="fonts/gentilis_regular.typeface.js"></script>
+<script src="fonts/optimer_bold.typeface.js"></script>
+<script src="fonts/optimer_regular.typeface.js"></script>
+<script src="fonts/helvetiker_bold.typeface.js"></script>
+<script src="fonts/helvetiker_regular.typeface.js"></script>
+<script src="fonts/droid/droid_sans_regular.typeface.js"></script>
+<script src="fonts/droid/droid_sans_bold.typeface.js"></script>
+<script src="fonts/droid/droid_serif_regular.typeface.js"></script>
+<script src="fonts/droid/droid_serif_bold.typeface.js"></script>
+
+
+<script src="Text.js"></script>
+
+<script>
+
+  console.log('Loading');
+
+  var container , camera, scene, renderer , stats;
+
+  var sceneSize = 5000;
+
+
+  var treeArray = [];
+  var handGeo;
+  var skullGeo;
+  var tendrilGeo;
+  var logoGeo;
+
+  var mouse = new THREE.Vector2();
+  var oMouse = mouse.clone();
+
+  var camRotation = 0;
+  var camTheta = 0;
+
+
+  var loaded = 0;
+  var neededToLoad = 2;
+
+  var waterRender = { type:"f" ,value:0}
+
+  var clock = new THREE.Clock();
+
+  var audioController = new AudioController();
+  audioController.mute.gain.value = 0;
+
+  var camUniforms;
+
+  var stream;// = new Stream(  'audio/norrland.mp3',audioController  );
+  
+
+  var userAudio = new UserAudio( audioController );
+
+  userAudio.onStreamCreated = function(){
+
+    onLoad();
+
+  }
+
+  //var userMedia = new UserMedia
+  var lT = THREE.ImageUtils.loadTexture;
+  var m = THREE.UVMapping;
+  var c = function(){ onLoad() };
+
+  var waterNormal = lT( 'img/normals/water.png' , m , c );
+  waterNormal.wrapS = THREE.RepeatWrapping; 
+  waterNormal.wrapT = THREE.RepeatWrapping;
+
+
+  var controller = new Leap.Controller();
+
+  // FRIEND TEXTURES
+ 
+
+  var timer = { type:"f" , value:0 }
+  var dT = { type:"f" , value:0 }
+  var t_audio = { type:"t" , value:audioController.texture}
+
+
+  var shaders = new ShaderLoader('shaders');
+
+  shaders.load( 'fs-water' , 'water' , 'fragment' );
+  shaders.load( 'vs-water' , 'water' , 'vertex' );
+  shaders.load( 'fs-tree' , 'tree' , 'fragment' );
+  shaders.load( 'vs-tree' , 'tree' , 'vertex' );
+  shaders.load( 'fs-mountain' , 'mountain' , 'fragment' );
+  shaders.load( 'vs-mountain' , 'mountain' , 'vertex' );
+  shaders.load( 'fs-particles' , 'particles' , 'fragment' );
+  shaders.load( 'vs-particles' , 'particles' , 'vertex' );
+  shaders.load( 'ss-particles' , 'particles' , 'simulation' );
+
+  shaders.shaderSetLoaded = function(){
+   onLoad();
+  }
+
+
+  function init(){
+
+
+    scene = new THREE.Scene();
+    
+    camera = new THREE.PerspectiveCamera( 
+      50 ,
+      window.innerWidth / window.innerHeight,
+      sceneSize / 100 ,
+      sceneSize * 4000
+    );
+
+    // placing our camera position so it can see everything
+    camera.position.z = 2000 ;
+    camera.position.y = 1000;
+    camera.lookAt( new THREE.Vector3() );
+
+
+    camera.theta = 0;
+    camera.rotationSpeed = 0;
+
+    controls = new THREE.TrackballControls( camera );
+
+    //controls.noPan = true;
+    //controls.noRoll = true;
+   // controls.noRotate = true; 
+
+    // Getting the container in the right location
+    container     = document.createElement( 'div' );
+    container.id  = 'container';
+    
+    document.body.appendChild( container );
+
+    // Getting the stats in the right position
+    stats = new Stats();
+    stats.domElement.id = 'stats';
+    document.body.appendChild( stats.domElement );
+
+
+    // Setting up our Renderer
+    renderer = new THREE.WebGLRenderer({ autoclear:false });
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    container.appendChild( renderer.domElement );
+
+
+    // Making sure our renderer is always the right size
+    window.addEventListener( 'resize', onWindowResize , false );
+    window.addEventListener( 'mousemove', onMouseMove , false );
+   
+
+    var obj = new THREE.Object3D();
+    objectControls = new ObjectControls( camera , obj , controller );
+  
+
+    var w = window.innerWidth ;
+    var h = window.innerHeight;
+    waterTexture = new THREE.WebGLRenderTarget( 2048 , 2048 );
+    
+    waterCam = camera.clone(); 
+    waterCam.position.copy( camera.position );
+
+    waterCam.position.y *= -1;
+    //waterCam.up.y = -1;
+
+    waterCam.scale.y *= -1;
+    waterCam.lookAt( new THREE.Vector3() );
+
+    scene.add( waterCam );
+
+
+    
+
+    w = window.innerWidth;
+    h = window.innerHeight;
+
+    var dpr = devicePixelRatio || 1;
+
+    camUniforms = {
+      t_scene:{ type:"t" , value: waterTexture },
+      t_normal:{ type:"t" , value: waterNormal },
+      t_audio: t_audio,
+      lightPos:{type:"v3" , value: new THREE.Vector3( 0 , 300 , 0 ) },
+      SS:{ type:"v2", value: new THREE.Vector2( w*dpr , h*dpr ) },
+      timer:timer,
+      normalScale:{type:"f",value:100.}
+    }
+
+    var material = new THREE.ShaderMaterial({
+      uniforms: camUniforms,
+      vertexShader: shaders.vertexShaders.water,
+      fragmentShader: shaders.fragmentShaders.water,
+      transparent:true
+
+
+    });
+    
+    water = new THREE.Mesh(
+      new THREE.PlaneGeometry( 3000 , 3000 ),
+      material 
+    );
+
+    water.rotation.x = -Math.PI/2;
+
+    scene.add( water );
+
+    /*var sun = new THREE.Mesh( new THREE.CubeGeometry( 100 , 300 , 30 ) , new THREE.MeshNormalMaterial() );
+
+    sun.rotation.z = .4
+    sun.position.y = 200;
+    scene.add( sun );*/
+
+    /*var uniforms = {
+      t_audio:t_audio,
+      waterRender:waterRender
+
+    }
+
+    var attributes = {
+      slice:{type:"f" , value:null}
+    }
+
+    var treeMat = new THREE.ShaderMaterial({
+
+      uniforms:uniforms,
+      attributes:attributes,
+      vertexShader: shaders.vertexShaders.tree,
+      fragmentShader: shaders.fragmentShaders.tree,
+      transparent: true,
+     // blending: THREE.AdditiveBlending,
+      //depthWrite: false
+
+    });
+
+    var params = {
+      radius:                 40,
+      height:                400,
+      sides:                    5,
+      numOf:                   18, 
+      randomness:             50,
+      slices:                 200,
+      startingChance:          4.,
+      chanceReducer:           .9,
+      randomnessReducer:       .5,
+      sliceReducer:            .7,
+      numOfReducer:            .8,
+      progressionPower:        1.4,
+      lengthReduction:         .5,
+      maxIterations:            3,
+      material:               treeMat, 
+      createTree: function(){
+        createTree();
+      }
+    }
+
+
+    var trees = new THREE.Object3D();
+
+    for( var i =0; i < 6; i++ ){
+
+      params.randomness = 100 * (Math.random()+.5);
+      params.slices = Math.floor(  50 * (Math.random()+.5) );
+      var tree = new Tree( params );
+      tree.rotation.z = (i / 6 ) * 2 * Math.PI;
+      trees.add( tree );
+
+      treeArray.push( tree );
+
+     }
+
+    trees.rotation.x = Math.PI / 2;
+    trees.position.y = 00;
+    scene.add( trees );
+
+
+    params.height = 600;
+    params.radius = 80;
+    params.sides = 8;
+    params.randomness = 100;
+    params.slices = 100;
+    var t = new Tree( params );
+    scene.add( t );*/
+
+
+    var uniforms = {
+
+      waterRender: waterRender,
+      t_audio: t_audio
+
+    }
+
+    var mountainMat = new THREE.ShaderMaterial({
+
+      uniforms: uniforms,
+      vertexShader:shaders.vertexShaders.mountain,
+      fragmentShader:shaders.fragmentShaders.mountain,
+     // transparent:true,
+     // blending:THREE.AdditiveBlending
+
+    });
+
+
+    var mountains = new Mountains({
+     material:mountainMat 
+    });
+    //scene.add( mountains );
+
+
+    var text = new Text( mountainMat );
+
+    text.mesh.position.x = -1000;
+    text.mesh.position.y = -100;
+
+    scene.add( text.mesh );
+
+    //console.log( text.mesh
+    particles = new Particles( text.mesh.geometry );
+    particles.three.position.x = -1000;
+    scene.add( particles.three );
+
+  }
+
+
+  function animate(){
+
+    objectControls.update();
+    audioController.update();
+
+    dT.value = clock.getDelta();
+    timer.value += dT.value;
+    particles.update();
+
+    stats.update();
+
+   // controls.update();
+
+    updateCamera();
+
+    var t = timer.value;
+
+    
+
+    /*for( var i = 0; i < treeArray.length; i++ ){
+
+      treeArray[i].rotation.x += .0005* (i+1);
+      treeArray[i].rotation.y += .0002* (i+1);
+      treeArray[i].rotation.z += .0001* ( i +1 );
+
+    }*/
+
+   // waterCam.matrix.copy( camera.matrix );
+   // waterCam.matrix.needsUpdate = true;
+    waterCam.position.copy( camera.position );
+    waterCam.position.y *= -1;
+    waterCam.lookAt( new THREE.Vector3() );
+
+    waterRender.value = 1;
+    water.visible = false;
+    renderer.render( scene , waterCam  , waterTexture , true);
+
+    waterRender.value = 0;
+    water.visible = true;
+    renderer.render( scene , camera );
+
+    requestAnimationFrame( animate );
+
+  }
+
+  function updateCamera(){
+
+    camera.theta += camera.rotationSpeed;
+
+
+    var x = 2000 * Math.cos( camera.theta );
+    var z = 2000  * Math.sin( camera.theta );
+    camera.position.x = x;
+    camera.position.z = z;
+    camera.lookAt( new THREE.Vector3() );
+
+    camera.rotationSpeed  *= .95;
+
+    
+  }
+
+  function onMouseMove(e ){
+
+    oMouse.copy( mouse );
+    mouse.set( e.clientX , e.clientY );
+
+
+    var dif = (mouse.x - oMouse.x) / 1000;
+    var sign = dif < 0 ? -1 : 1;
+
+    camera.rotationSpeed += sign * dif * dif;
+
+
+
+  }
+
+  // Resets the renderer to be the proper size
+  function onWindowResize(){
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    waterCam.aspect = window.innerWidth / window.innerHeight;
+    waterCam.updateProjectionMatrix();
+
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+   // waterTexture.setSize( window.innerWidth, window.innerHeight );
+   
+    var dpr = devicePixelRatio || 1;
+
+    camUniforms.SS.value.x = window.innerWidth * dpr;
+    camUniforms.SS.value.y = window.innerHeight * dpr;
+
+
+  }
+
+
+  function onLoad(){
+
+
+    loaded ++;
+
+    console.log(loaded );
+    if( loaded === neededToLoad ){
+
+      init();
+      animate();
+      
+      if( stream ){
+      
+        stream.play();
+
+      }
+
+    }
+
+  }
+
+
+</script>
+
+
+</body>
+</html>
