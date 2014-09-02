@@ -13,7 +13,7 @@ function Text( text , mat ){
     bevelSegments = 3,
     bevelEnabled = true,
 
-    font ="droid sans", // helvetiker, optimer, gentilis, droid sans, droid serif
+    font ="helvetiker", // helvetiker, optimer, gentilis, droid sans, droid serif
     weight = "bold", // normal bold
     style = "normal"; // normal italic
 
