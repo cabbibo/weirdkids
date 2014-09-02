@@ -13,7 +13,7 @@ function Text( text , mat ){
     bevelSegments = 3,
     bevelEnabled = true,
 
-    font = "optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
+    font ="droid sans", // helvetiker, optimer, gentilis, droid sans, droid serif
     weight = "bold", // normal bold
     style = "normal"; // normal italic
 
@@ -38,7 +38,8 @@ function Text( text , mat ){
   });
 
   geo.computeBoundingBox();
-  geo.computeVertexNormals();
+  geo.computeFaceNormals();
+ // geo.computeVertexNormals();
 
   var mesh = new THREE.Mesh( geo ,/* new THREE.MeshBasicMaterial({
   

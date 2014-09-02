@@ -75,7 +75,7 @@ void main(){
   vec4 audC = texture2D( t_audio , vec2( fr , 0. )  );
 
   //fC = reflC*fr*5.;
-  gl_FragColor = vec4( normalize(reflC * audC )) - vec4( 0. , 0. , 0. , length( fC ) );
+  gl_FragColor = 3. * reflC * audC * normalize(  reflC * audC ) - vec4( 0. , 0. , 0. , length( fC ) );
 
 
 

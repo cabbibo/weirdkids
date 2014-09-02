@@ -20,9 +20,10 @@
 
     #stats{
       position  : absolute;
-      bottom    : 0px;
-      right     : 0px;
+      bottom    : -35px;
+      left      : 0px;
       z-index   : 999;
+      opacity: .1;
     }
 
     a{
@@ -39,11 +40,39 @@
       font-size:25px;
 
     }
+    
+    a{
+      color: #fff;
+      position: absolute;
+      z-index: 999;
+      bottom:5px;
+      right:10px;
+      text-decoration:none;
+      //underline:none;
+      opacity:.5;
+      font-size: 20px;
+    }
+
+    a:hover{
+
+      text-decoration:underline;
+      opacity:1;
+
+    }
+
+    #description
 
   </style>
 </head>
 <body>
 
+   <div id="description">
+
+    <a href="http://soundcloud.com/cabbibo" target="_blank">
+      Cabbibo - Polar Repress
+    </a>
+
+  </div>
 
 
 <script src = "lib/underscore.js"           ></script>
@@ -109,23 +138,24 @@
   var clock = new THREE.Clock();
 
   var audioController = new AudioController();
-  audioController.mute.gain.value = 0;
+  //audioController.mute.gain.value = 0;
 
   var controller = new Leap.Controller();
   controller.connect();
 
   var camUniforms;
 
-  var stream;// = new Stream(  'audio/norrland.mp3',audioController  );
+
+  var stream = new Stream(  'audio/polar.mp3',audioController  );
   
 
-  var userAudio = new UserAudio( audioController );
+ /* var userAudio = new UserAudio( audioController );
 
   userAudio.onStreamCreated = function(){
 
     onLoad();
 
-  }
+  }*/
 
   //var userMedia = new UserMedia
   var lT = THREE.ImageUtils.loadTexture;
@@ -270,88 +300,17 @@
 
     scene.add( water );
 
-    /*var sun = new THREE.Mesh( new THREE.CubeGeometry( 100 , 300 , 30 ) , new THREE.MeshNormalMaterial() );
+   
 
-    sun.rotation.z = .4
-    sun.position.y = 200;
-    scene.add( sun );*/
-
-    /*var uniforms = {
-      t_audio:t_audio,
-      waterRender:waterRender
-
-    }
-
-    var attributes = {
-      slice:{type:"f" , value:null}
-    }
-
-    var treeMat = new THREE.ShaderMaterial({
-
-      uniforms:uniforms,
-      attributes:attributes,
-      vertexShader: shaders.vertexShaders.tree,
-      fragmentShader: shaders.fragmentShaders.tree,
-      transparent: true,
-     // blending: THREE.AdditiveBlending,
-      //depthWrite: false
-
-    });
-
-    var params = {
-      radius:                 40,
-      height:                400,
-      sides:                    5,
-      numOf:                   18, 
-      randomness:             50,
-      slices:                 200,
-      startingChance:          4.,
-      chanceReducer:           .9,
-      randomnessReducer:       .5,
-      sliceReducer:            .7,
-      numOfReducer:            .8,
-      progressionPower:        1.4,
-      lengthReduction:         .5,
-      maxIterations:            3,
-      material:               treeMat, 
-      createTree: function(){
-        createTree();
-      }
-    }
-
-
-    var trees = new THREE.Object3D();
-
-    for( var i =0; i < 6; i++ ){
-
-      params.randomness = 100 * (Math.random()+.5);
-      params.slices = Math.floor(  50 * (Math.random()+.5) );
-      var tree = new Tree( params );
-      tree.rotation.z = (i / 6 ) * 2 * Math.PI;
-      trees.add( tree );
-
-      treeArray.push( tree );
-
-     }
-
-    trees.rotation.x = Math.PI / 2;
-    trees.position.y = 00;
-    scene.add( trees );
-
-
-    params.height = 600;
-    params.radius = 80;
-    params.sides = 8;
-    params.randomness = 100;
-    params.slices = 100;
-    var t = new Tree( params );
-    scene.add( t );*/
-
-
+    console.log( waterNormal );
     var uniforms = {
 
       waterRender: waterRender,
-      t_audio: t_audio
+      t_audio: t_audio,
+      t_normal:{type:"t" , value:waterNormal },
+      timer:timer,
+      lightPos:{type:"v3",value: new THREE.Vector3( 0 , 200 , 400 ) },
+      camPos:{type:"v3", value: camera.position }
 
     }
 
@@ -383,6 +342,8 @@
     //console.log( text.mesh
     particles = new Particles( text.mesh.geometry );
     particles.three.position.x = -1000;
+    particles.three.position.y = 50;
+    
     scene.add( particles.three );
 
   }
