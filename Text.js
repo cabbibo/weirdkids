@@ -1,6 +1,6 @@
-function Text( mat ){
+function Text( text , mat ){
 
-  var text = "#weirdkids",
+  //var text = "#weirdkids",
 
     height = 20,
     size = 300,

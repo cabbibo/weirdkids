@@ -25,13 +25,13 @@ void main(){
   float a = 1.;
   if( vMPos.y < 0. ){
 
-    c = vec3( .1 , .1 , .6 ) * (300. - abs( vMPos.y )) /300.;
+    c = vec3( .1 , .9 , .6 ) * (40. - abs( vMPos.y )) /30.;
 
     a = 3. - abs( vMPos.y );
 
   }
 
-  vec4 aC = texture2D( t_audio , vec2( abs( vMPos.y / 300. ) , 0. ) );
+  vec4 aC = texture2D( t_audio , vec2( abs( (vMPos.y-50.) / 300. ) , 0. ) );
  
   vec4 multiColor = mix( vec4( 1. , .8 , .3 , 1. ) , vec4( 1. , .2 , 0. , 1.) , vMPos.y );
   gl_FragColor = aC * vec4(c,a);

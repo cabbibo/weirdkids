@@ -111,6 +111,9 @@
   var audioController = new AudioController();
   audioController.mute.gain.value = 0;
 
+  var controller = new Leap.Controller();
+  controller.connect();
+
   var camUniforms;
 
   var stream;// = new Stream(  'audio/norrland.mp3',audioController  );
@@ -369,10 +372,11 @@
     //scene.add( mountains );
 
 
-    var text = new Text( mountainMat );
+    var text = new Text( '#weirdkids' , mountainMat );
 
     text.mesh.position.x = -1000;
-    text.mesh.position.y = -100;
+    text.mesh.position.y = 50;
+
 
     scene.add( text.mesh );
 
